@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">扫码</string>
+    <string name="flash">闪光灯</string>
+    <string name="result">扫码结果:</string>
+    <string name="copy">复制</string>
+    <string name="not_allowed_camera_permission">未授予相机权限，功能无法使用</string>
+    <string name="camera_not_support">未检测到摄像头，功能无法使用</string>
+    <string name="copy_success">内容已复制到剪切板</string>
+</resources>

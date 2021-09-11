@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ScanCode</string>
+    <string name="flash">flash</string>
+    <string name="result">Result:</string>
+    <string name="copy">Copy</string>
+    <string name="not_allowed_camera_permission">Not Allowed Camera Permission,Application can not work</string>
+    <string name="camera_not_support">No Camera Support</string>
+    <string name="copy_success">Copy Success</string>
+</resources>
