@@ -5,8 +5,11 @@ import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Size
 import android.view.View
 import android.widget.*
@@ -16,8 +19,12 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import com.google.mlkit.vision.barcode.Barcode
+import com.google.mlkit.vision.barcode.BarcodeScanner
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
+import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -28,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mCopyBtn: Button
     private lateinit var mScanIv: ImageView
     private lateinit var mFlashIv: ImageView
+    private lateinit var mImageIv: ImageView
     private lateinit var mPreviewView: PreviewView
     private lateinit var mCameraExecutor: ExecutorService
 
@@ -36,6 +44,8 @@ class MainActivity : AppCompatActivity() {
     private var mCamera: Camera? = null
 
     private var mImageAnalysis: ImageAnalysis? = null
+
+    private var mScanner: BarcodeScanner? = null
 
     private var mBackCamera = true
     private var mFlashLightOn = false
@@ -49,6 +59,7 @@ class MainActivity : AppCompatActivity() {
         mCopyBtn = findViewById(R.id.btnCopy)
         mScanIv = findViewById(R.id.ivScan)
         mFlashIv = findViewById(R.id.ivFlash)
+        mImageIv = findViewById(R.id.ivImage)
         mPreviewView = findViewById(R.id.previewView)
 
         mCopyBtn.setOnClickListener {
@@ -58,6 +69,9 @@ class MainActivity : AppCompatActivity() {
             mFlashLightOn = !mFlashLightOn
             mCamera?.cameraControl?.enableTorch(mFlashLightOn)
             mFlashIv.isSelected = mFlashLightOn
+        }
+        mImageIv.setOnClickListener {
+            chooseImage()
         }
 
         mCameraExecutor = Executors.newSingleThreadExecutor()
@@ -72,6 +86,81 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
+
+    private fun chooseImage() {
+        if (ContextCompat.checkSelfPermission(
+                this@MainActivity,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            mRequestStoragePermission.launch(
+                arrayOf(
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                )
+            )
+            return
+        }
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        chooseImageResult.launch(intent)
+    }
+
+    private val chooseImageResult =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                if (result.data != null && result.data!!.data != null) {
+                    val uri = result.data!!.data!!
+                    dealWithImageResult(uri)
+                }
+            }
+        }
+
+    private fun dealWithImageResult(uri: Uri) {
+        var image: InputImage? = null
+        try {
+            image = InputImage.fromFilePath(this@MainActivity, uri)
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        if (image != null) {
+            stopAnalysis()
+            analyzerImage(image)
+        }
+    }
+
+    private fun analyzerImage(image: InputImage) {
+        if (mScanner == null) {
+            val options = BarcodeScannerOptions.Builder()
+                .setBarcodeFormats(
+                    Barcode.FORMAT_CODABAR,
+                    Barcode.FORMAT_EAN_8,
+                    Barcode.FORMAT_EAN_13,
+                    Barcode.FORMAT_QR_CODE
+                )
+                .build()
+            mScanner = BarcodeScanning.getClient(options)
+        }
+        mScanner!!.process(image)
+            .addOnSuccessListener { barcodes ->
+                if (barcodes.isEmpty()) {
+                    showToast(resources.getString(R.string.barcode_not_recognized))
+                } else {
+                    for (barcode in barcodes) {
+                        val result = barcode.rawValue
+                        if (result != null) {
+                            showAnalyzerResult(result)
+                            break
+                        }
+                    }
+                }
+            }
+            .addOnFailureListener {
+                showToast(resources.getString(R.string.identify_picture_failed))
+            }
+            .addOnCompleteListener {
+
+            }
+    }
+
 
     private fun checkCameraAndStoragePermission() {
         if (ContextCompat.checkSelfPermission(
@@ -168,6 +257,23 @@ class MainActivity : AppCompatActivity() {
             }
             if (!hasAllPermission) {
                 showToast(getString(R.string.not_allowed_camera_permission))
+            }
+        }
+
+    private val mRequestStoragePermission =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            var hasAllPermission = true
+            for (item in result) {
+                if (item.key == Manifest.permission.READ_EXTERNAL_STORAGE) {
+                    if (item.value) {
+                        chooseImage()
+                    } else {
+                        hasAllPermission = false
+                    }
+                }
+            }
+            if (!hasAllPermission) {
+                showToast(getString(R.string.not_allowed_storage_permission))
             }
         }
 

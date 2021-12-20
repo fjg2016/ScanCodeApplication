@@ -22,11 +22,25 @@
         android:id="@+id/ivFlash"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_gravity="bottom|center_horizontal"
+        android:layout_gravity="bottom"
+        android:layout_marginLeft="48dp"
+        android:layout_marginRight="48dp"
         android:layout_marginBottom="48dp"
         android:contentDescription="@string/flash"
         android:padding="8dp"
         android:src="@drawable/selector_flash" />
+
+    <ImageView
+        android:id="@+id/ivImage"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginLeft="48dp"
+        android:layout_marginRight="48dp"
+        android:layout_marginBottom="48dp"
+        android:contentDescription="@string/image"
+        android:padding="8dp"
+        android:src="@drawable/icon_image" />
 
     <LinearLayout
         android:id="@+id/llResult"
@@ -62,6 +76,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="end"
             android:text="@string/copy"
+            android:textColor="@color/colorResultText"
             android:textSize="14sp" />
 
     </LinearLayout>
